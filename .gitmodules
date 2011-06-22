@@ -1,0 +1,6 @@
+[submodule "OSM-binary"]
+	path = OSM-binary
+	url = git://github.com/joto/OSM-binary.git
+[submodule "osmium"]
+	path = osmium
+	url = git://github.com/joto/osmium.git
