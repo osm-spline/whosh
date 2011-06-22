@@ -74,7 +74,7 @@ public:
 };
 
 void print_help() {
-    std::cout << "xappy-importer [OPTIONS] [INFILE]\n\n" \
+    std::cout << "whosh [OPTIONS] [INFILE]\n\n" \
               << "If INFILE is not given stdin/stdout is assumed.\n" \
               << "File format is given as suffix in format .TYPE[.ENCODING].\n" \
               << "\nFile types:\n" \
