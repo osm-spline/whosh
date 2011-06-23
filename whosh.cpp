@@ -10,14 +10,40 @@
 
 class pgCopyHandler : public Osmium::Handler::Base {
 
-PGconn *conn;
+PGconn *node_conn, *way_conn, *rel_conn;
 static const char d = ';';
-long long int count;
+long long int node_count;
+long long int way_count;
+long long int rel_count;
 
 public:
 
-    pgCopyHandler(PGconn *psql) : conn(psql) {
-        count = 0;
+    pgCopyHandler(std::string dbConnectionString) {
+        node_count = 0;
+        way_count = 0;
+        rel_count = 0;
+        
+/*        node_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(node_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Nodes failed: ";
+            std::cerr << PQerrorMessage(node_conn) << std::endl;
+            exit(1);
+        }
+        
+        way_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(way_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Ways failed: ";
+            std::cerr << PQerrorMessage(way_conn) << std::endl;
+            exit(1);
+        }
+        
+        rel_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(rel_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Relations failed: ";
+            std::cerr << PQerrorMessage(rel_conn) << std::endl;
+            exit(1);
+        }
+*/
     }
 
     ~pgCopyHandler() {
@@ -61,10 +87,12 @@ public:
 
     void callback_way(Osmium::OSM::Way *way) {
         std::cerr << "Way!" << std::endl;
+        way_count++;
     }
 
     void callback_relation(Osmium::OSM::Relation *relation) {
         std::cerr << "Relation!" << std::endl;
+        rel_count++;
     }
 
     void callback_final() {
@@ -148,32 +176,19 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::string input;
     int remaining_args = argc - optind;
     if ( (remaining_args != 1) || host.empty() || db.empty() || user.empty() ) {
         std::cerr << "You are doin' it wrong. Use -h to get help." << std::endl;
         exit(1);
-    } else { 
-        input = argv[optind];
     }
 
-    
-
-    Osmium::Framework osmium(debug);
-
-    Osmium::OSMFile infile(input);
-
+    std::string input = argv[optind]; 
     std::string conninfo = "dbname = " + db + " host = " + host + " user = "+ user + " password = " + pass;
 
-    PGconn *conn;
-    conn = PQconnectdb(conninfo.c_str());
-    if(PQstatus(conn) != CONNECTION_OK) {
-        std::cerr << "OH NOES Thomeszing iz wron wit teh db conf oa teh internez" << std::endl;
-        std::cerr << PQerrorMessage(conn) << std::endl;
-        exit(1);
-    }
+    Osmium::Framework osmium(debug);
+    Osmium::OSMFile infile(input);
 
-    pgCopyHandler handler(conn);
+    pgCopyHandler handler(conninfo);
     infile.read(handler);
 }
 
