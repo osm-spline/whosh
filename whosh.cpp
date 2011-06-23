@@ -66,20 +66,23 @@ public:
     }
 
     void callback_init() {
+        std::cerr << "Sending BEGIN" << std::endl;
         //std::cout << "BEGIN;" << std::endl;
     }
 
     void callback_node(Osmium::OSM::Node *node) {
-        std::cout << node->get_id() << d << node->get_version() << d << node->get_uid() << d;
-        std::cout << node->get_timestamp_as_string().replace(10,1," ").erase(19,1) << d;
-        std::cout << node->get_changeset() << d << tagsToHstore(node) << d;
-        std::cout << "SRID=4326\\;POINT(" << node->get_lat() << " " << node->get_lon() << ")";
-        std::cout << std::endl;
-        count++;
-        if (count % 10000 == 0) {
+        std::ostringstream node_str;
+        node_str << node->get_id() << d << node->get_version() << d << node->get_uid() << d;
+        node_str << node->get_timestamp_as_string().replace(10,1," ").erase(19,1) << d;
+        node_str << node->get_changeset() << d << tagsToHstore(node) << d;
+        node_str << "SRID=4326\\;POINT(" << node->get_lat() << " " << node->get_lon() << ")";
+        node_str << std::endl;
+        std::cout << node_str.str();
+
+        node_count++;
+        if (node_count % 10000 == 0) {
             std::cerr << '\r';
-            std::cerr << std::setfill(' ') << std::setw(19) << count;
-            
+            std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
             //std::cout << "END;" << std::endl;
             exit(0);
         }
