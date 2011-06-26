@@ -106,7 +106,7 @@ public:
 
 void print_help() {
     std::cout << "whosh [OPTIONS] [INFILE]\n\n" \
-              << "If INFILE is not given stdin/stdout is assumed.\n" \
+              << "If INFILE is not given stdin is assumed.\n" \
               << "File format is given as suffix in format .TYPE[.ENCODING].\n" \
               << "\nFile types:\n" \
               << "  osm     normal OSM file\n" \
