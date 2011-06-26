@@ -52,11 +52,10 @@ public:
     std::string tagsToHstore(Osmium::OSM::Node *node) {
         if(node->tag_count() != 0) {
             std::ostringstream out;
-            out << "hstore(ARRAY[" << "'" << node->get_tag_key(0) << "','" << node->get_tag_value(0) << "'";
+            out << "\"" << node->get_tag_key(0) << "\"=>\"" << node->get_tag_value(0) << "\"";
             for(int i=1;i<node->tag_count();++i) {
-                out << ",'" << node->get_tag_key(i) << "','" << node->get_tag_value(i) << "'";
+                out << ",\"" << node->get_tag_key(i) << "\"=>\"" << node->get_tag_value(i) << "\"";
             }
-            out << "])";
             std::string str(out.str());
             return str;
         } else {
