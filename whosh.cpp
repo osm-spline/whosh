@@ -102,9 +102,12 @@ public:
 
     void callback_node(Osmium::OSM::Node *node) {
         std::ostringstream node_str;
-        node_str << node->get_id() << d << node->get_version() << d << node->get_uid() << d;
+        node_str << node->get_id() << d;
+        node_str << node->get_version() << d;
+        node_str << node->get_uid() << d;
         node_str << node->get_timestamp_as_string().replace(10,1," ").erase(19,1) << d;
-        node_str << node->get_changeset() << d << tagsToHstore(node) << d;
+        node_str << node->get_changeset() << d;
+        node_str << tagsToHstore(node) << d;
         node_str << "SRID=4326\\;POINT(" << node->get_lat() << " " << node->get_lon() << ")";
         node_str << std::endl;
         std::cout << node_str.str();
@@ -137,8 +140,11 @@ public:
     }
 
     void callback_relation(Osmium::OSM::Relation *relation) {
-        std::cerr << "Relation!" << std::endl;
         rel_count++;
+        if (rel_count % 10000 == 0) {
+            std::cerr << '\r';
+            std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+        }
     }
 
     void callback_final() {
