@@ -49,15 +49,29 @@ public:
     ~pgCopyHandler() {
     }
 
-    std::string tagsToHstore(Osmium::OSM::Node *node) {
-        if(node->tag_count() != 0) {
-            std::ostringstream out;
-            out << "\"" << node->get_tag_key(0) << "\"=>\"" << node->get_tag_value(0) << "\"";
-            for(int i=1;i<node->tag_count();++i) {
-                out << ",\"" << node->get_tag_key(i) << "\"=>\"" << node->get_tag_value(i) << "\"";
+    std::string escape(std::string str) {
+        std::ostringstream ret;
+        size_t i;
+        for(i=0;i<str.length();++i) {
+            if (str[i] == d) {
+                ret << "\\";
             }
-            std::string str(out.str());
-            return str;
+            if (str[i] == '\"') {
+                ret << "\\\\";
+            }
+            ret << str[i];
+        }
+        return ret.str();
+    }
+
+    std::string tagsToHstore(Osmium::OSM::Object *obj) {
+        if(obj->tag_count() != 0) {
+            std::ostringstream out;
+            out << "\"" << escape(obj->get_tag_key(0)) << "\"=>\"" << escape(obj->get_tag_value(0)) << "\"";
+            for(int i=1;i<obj->tag_count();++i) {
+                out << ",\"" << escape(obj->get_tag_key(i)) << "\"=>\"" << escape(obj->get_tag_value(i)) << "\"";
+            }
+            return out.str();
         } else {
             std::string str("");
             return str;
