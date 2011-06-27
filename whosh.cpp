@@ -127,7 +127,7 @@ public:
         way_str << way->get_timestamp_as_string().replace(10,1," ").erase(19,1) << d;
         way_str << way->get_changeset() << d;
         way_str << tagsToHstore(way) << d;
-        way_str << d;
+        way_str << genNodesArray(way) << d;
         way_str << d;
         way_str << std::endl;
         //std::cout << way_str.str();
