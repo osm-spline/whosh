@@ -78,6 +78,23 @@ public:
         }
     }
 
+    std::string genNodesArray(Osmium::OSM::Way *way) {
+        osm_sequence_id_t nodecount = way->node_count();
+        osm_sequence_id_t i;
+        std::ostringstream out;
+        if (nodecount > 0) {
+            out << "{" << way->get_node_id(0);
+            for(i=1;i<nodecount;++i) {
+                out << "," << way->get_node_id(i);
+            }
+            out << "}";
+        }
+        else {
+            out << "{}";
+        }
+        return out.str();
+    }
+
     void callback_init() {
         std::cerr << "Sending BEGIN" << std::endl;
         //std::cout << "BEGIN;" << std::endl;
@@ -96,14 +113,27 @@ public:
         if (node_count % 10000 == 0) {
             std::cerr << '\r';
             std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
-            //std::cout << "END;" << std::endl;
-            exit(0);
         }
     }
 
     void callback_way(Osmium::OSM::Way *way) {
-        std::cerr << "Way!" << std::endl;
+        std::ostringstream way_str;
+        way_str << way->get_id() << d;
+        way_str << way->get_version() << d;
+        way_str << way->get_uid() << d;
+        way_str << way->get_timestamp_as_string().replace(10,1," ").erase(19,1) << d;
+        way_str << way->get_changeset() << d;
+        way_str << tagsToHstore(way) << d;
+        way_str << d;
+        way_str << d;
+        way_str << std::endl;
+        //std::cout << way_str.str();
+
         way_count++;
+        if (way_count % 10000 == 0) {
+            std::cerr << '\r';
+            std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+        }
     }
 
     void callback_relation(Osmium::OSM::Relation *relation) {
