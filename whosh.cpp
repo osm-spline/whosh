@@ -223,7 +223,7 @@ public:
             node_count++;
             if (node_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
             }
         }
         else {
@@ -248,7 +248,7 @@ public:
             way_count++;
             if (way_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
             }
         }
         else {
@@ -305,9 +305,10 @@ public:
     }
 
     void callback_final() {
+        std::cerr << '\r';
+        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
         finishHim(node_conn);
         finishHim(way_conn);
-        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
         finishHim(rel_conn);
         finishHim(relmem_conn);
     }
