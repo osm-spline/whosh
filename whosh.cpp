@@ -313,6 +313,11 @@ int main(int argc, char *argv[]) {
     std::string input = argv[optind]; 
     std::string conninfo = "dbname = " + db + " host = " + host + " user = "+ user + " password = " + pass;
 
+    // hide cmd line args
+    for (int i=1;i<argc;++i) {
+        argv[i][0] = 0;
+    }
+
     Osmium::Framework osmium(debug);
     Osmium::OSMFile infile(input);
 
