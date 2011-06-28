@@ -57,11 +57,11 @@ public:
                 ret << "\\";
                 ret << str[i];
             }
-            if (str[i] == '\"') {
+            else if (str[i] == '\"') {
                 ret << "\\\\";
                 ret << str[i];
             }
-            if (str[i] == '\r') {
+            else if (str[i] == '\r') {
                 ret << "\\r";
             }
             else {
