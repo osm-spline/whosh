@@ -269,7 +269,7 @@ public:
         int success = PQputCopyData(rel_conn, rel_str.str().c_str(), rel_str.str().length());
         if (success == 1) {
             rel_count++;
-            if (way_count % 10000 == 0) {
+            if (rel_count % 10000 == 0) {
                 std::cerr << '\r';
                 std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
             }
@@ -281,8 +281,8 @@ public:
         Osmium::OSM::RelationMemberList members = rel->members();
         osm_sequence_id_t membercount = members.size();
         osm_sequence_id_t i;
+        std::ostringstream relmem_str;
         for(i=0;i<membercount;++i) {
-            std::ostringstream relmem_str;
             const Osmium::OSM::RelationMember* member = rel->get_member(i);
 
             relmem_str << rel->get_id() << d;
@@ -290,18 +290,19 @@ public:
             relmem_str << member->get_type() << d;
             relmem_str << member->get_role() << d;
             relmem_str << i;
-
-            success = PQputCopyData(relmem_conn, relmem_str.str().c_str(), relmem_str.str().length());
-            if (success == 1) {
-                rel_count++;
-                if (way_count % 10000 == 0) {
-                    std::cerr << '\r';
-                    std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
-                }
+            relmem_str << std::endl;
+        }
+        
+        success = PQputCopyData(relmem_conn, relmem_str.str().c_str(), relmem_str.str().length());
+        if (success == 1) {
+            relmem_count+=membercount;
+            if (relmem_count % 10000 == 0) {
+                std::cerr << '\r';
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
             }
-            else {
-                std::cerr << "Meh on Relmem: " << relmem_str.str() << std::endl;
-            }
+        }
+        else {
+            std::cerr << "Meh on Relmem: " << relmem_str.str() << std::endl;
         }
     }
 
