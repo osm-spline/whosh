@@ -167,7 +167,6 @@ public:
     }
 
     void callback_node(Osmium::OSM::Node *node) {
-        /*
         std::ostringstream node_str;
         node_str << node->get_id() << d;
         node_str << node->get_version() << d;
@@ -189,7 +188,6 @@ public:
         else {
             std::cerr << "Meh on Node: " << node_str.str() << std::endl;
         }
-        */
     }
 
     void callback_way(Osmium::OSM::Way *way) {
