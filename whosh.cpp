@@ -278,7 +278,8 @@ public:
             std::cerr << "Meh on Rel: " << rel_str.str() << std::endl;
         }
 
-        osm_sequence_id_t membercount = rel->member_count();
+        Osmium::OSM::RelationMemberList members = rel->members();
+        osm_sequence_id_t membercount = members.size();
         osm_sequence_id_t i;
         for(i=0;i<membercount;++i) {
             std::ostringstream relmem_str;
