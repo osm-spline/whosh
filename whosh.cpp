@@ -12,9 +12,10 @@ class pgCopyHandler : public Osmium::Handler::Base {
 
 PGconn *node_conn, *way_conn, *rel_conn;
 static const char d = ';';
-long long int node_count;
-long long int way_count;
-long long int rel_count;
+long int node_count;
+long int way_count;
+long int rel_count;
+long int relmem_count;
 
 public:
 
