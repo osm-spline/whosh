@@ -64,6 +64,9 @@ public:
             if (str[i] == '\r') {
                 ret << "\\r";
             }
+            else {
+                ret << str[i];
+            }
         }
         return ret.str();
     }
