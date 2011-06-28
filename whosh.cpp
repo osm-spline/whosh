@@ -10,7 +10,7 @@
 
 class pgCopyHandler : public Osmium::Handler::Base {
 
-PGconn *node_conn, *way_conn, *rel_conn;
+PGconn *node_conn, *way_conn, *rel_conn, *relmem_conn;
 static const char d = ';';
 long int node_count;
 long int way_count;
@@ -23,6 +23,7 @@ public:
         node_count = 0;
         way_count = 0;
         rel_count = 0;
+        relmem_count = 0;
 
         node_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(node_conn) != CONNECTION_OK) {
@@ -37,14 +38,22 @@ public:
             std::cerr << PQerrorMessage(way_conn) << std::endl;
             exit(1);
         }
-        /*
+
         rel_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(rel_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Relations failed: ";
             std::cerr << PQerrorMessage(rel_conn) << std::endl;
             exit(1);
         }
-        */
+
+        relmem_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(relmem_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Relation Members failed: ";
+            std::cerr << PQerrorMessage(relmem_conn) << std::endl;
+            exit(1);
+        }
+
+
     }
 
     ~pgCopyHandler() {
@@ -145,7 +154,8 @@ public:
         PGresult *res;
         sendBegin(node_conn);
         sendBegin(way_conn);
-        //sendBegin(rel_conn);
+        sendBegin(rel_conn);
+        sendBegin(relmem_conn);
 
         res = PQexec(node_conn, "COPY nodes (id, version, user_id, tstamp, changeset_id, tags, geom) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
@@ -153,6 +163,9 @@ public:
             std::cerr << PQerrorMessage(node_conn) << std::endl;
             PQclear(res);
             PQfinish(node_conn);
+            PQfinish(way_conn);
+            PQfinish(rel_conn);
+            PQfinish(relmem_conn);
             exit(1);
         }
 
@@ -162,7 +175,34 @@ public:
             std::cerr << "COMMAND COPY failded: ";
             std::cerr << PQerrorMessage(way_conn) << std::endl;
             PQclear(res);
+            PQfinish(node_conn);
             PQfinish(way_conn);
+            PQfinish(rel_conn);
+            PQfinish(relmem_conn);
+            exit(1);
+        }
+
+       res = PQexec(rel_conn, "COPY relations (id, version, user_id, tstamp, changeset_id, tags) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY failded: ";
+            std::cerr << PQerrorMessage(rel_conn) << std::endl;
+            PQclear(res);
+            PQfinish(node_conn);
+            PQfinish(way_conn);
+            PQfinish(rel_conn);
+            PQfinish(relmem_conn);
+            exit(1);
+        }
+
+       res = PQexec(relmem_conn, "COPY relation_members (relation_id, member_id, member_type, member_role, sequence_id) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY failded: ";
+            std::cerr << PQerrorMessage(relmem_conn) << std::endl;
+            PQclear(res);
+            PQfinish(node_conn);
+            PQfinish(way_conn);
+            PQfinish(rel_conn);
+            PQfinish(relmem_conn);
             exit(1);
         }
     }
@@ -216,19 +256,60 @@ public:
         }
     }
 
-    void callback_relation(Osmium::OSM::Relation *relation) {
-        rel_count++;
-        if (rel_count % 10000 == 0) {
-            std::cerr << '\r';
-            std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+    void callback_relation(Osmium::OSM::Relation *rel) {
+        std::ostringstream rel_str;
+        rel_str << rel->get_id() << d;
+        rel_str << rel->get_version() << d;
+        rel_str << rel->get_uid() << d;
+        rel_str << rel->get_timestamp_as_string().replace(10,1," ").erase(19,1) << d;
+        rel_str << rel->get_changeset() << d;
+        rel_str << tagsToHstore(rel);
+        rel_str << std::endl;
+
+        int success = PQputCopyData(rel_conn, rel_str.str().c_str(), rel_str.str().length());
+        if (success == 1) {
+            rel_count++;
+            if (way_count % 10000 == 0) {
+                std::cerr << '\r';
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
+            }
+        }
+        else {
+            std::cerr << "Meh on Rel: " << rel_str.str() << std::endl;
+        }
+
+        osm_sequence_id_t membercount = rel->member_count();
+        osm_sequence_id_t i;
+        for(i=0;i<membercount;++i) {
+            std::ostringstream relmem_str;
+            const Osmium::OSM::RelationMember* member = rel->get_member(i);
+
+            relmem_str << rel->get_id() << d;
+            relmem_str << member->get_ref() << d;
+            relmem_str << member->get_type() << d;
+            relmem_str << member->get_role() << d;
+            relmem_str << i;
+
+            success = PQputCopyData(relmem_conn, relmem_str.str().c_str(), relmem_str.str().length());
+            if (success == 1) {
+                rel_count++;
+                if (way_count % 10000 == 0) {
+                    std::cerr << '\r';
+                    std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
+                }
+            }
+            else {
+                std::cerr << "Meh on Relmem: " << relmem_str.str() << std::endl;
+            }
         }
     }
 
     void callback_final() {
         finishHim(node_conn);
         finishHim(way_conn);
-        //finishHim(rel_conn);
         std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+        finishHim(rel_conn);
+        finishHim(relmem_conn);
     }
 
 };
