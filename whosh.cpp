@@ -174,7 +174,6 @@ public:
         node_str << "SRID=4326\\;POINT(" << node->get_lat() << " " << node->get_lon() << ")";
         node_str << std::endl;
         int success = PQputCopyData(node_conn, node_str.str().c_str(), node_str.str().length());
-        //std::cout << node_str.str();
         if (success == 1) {
             node_count++;
             if (node_count % 10000 == 0) {
@@ -183,8 +182,9 @@ public:
             }
         }
         else {
-            std::cerr << "Meh" << std::endl;
+            std::cerr << "Meh on Node: " << node_str.str() << std::endl;
         }
+        */
     }
 
     void callback_way(Osmium::OSM::Way *way) {
