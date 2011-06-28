@@ -173,6 +173,7 @@ public:
         node_str << tagsToHstore(node) << d;
         node_str << "SRID=4326\\;POINT(" << node->get_lat() << " " << node->get_lon() << ")";
         node_str << std::endl;
+
         int success = PQputCopyData(node_conn, node_str.str().c_str(), node_str.str().length());
         if (success == 1) {
             node_count++;
@@ -198,10 +199,6 @@ public:
         way_str << genNodesArray(way) << d;
         way_str << d;
         way_str << std::endl;
-
-        //only for testing remove soon
-        finishHim(node_conn);
-        exit(0);
 
         int success = PQputCopyData(way_conn, way_str.str().c_str(), way_str.str().length());
         if (success == 1) {
