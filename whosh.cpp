@@ -55,11 +55,15 @@ public:
         for(i=0;i<str.length();++i) {
             if (str[i] == d) {
                 ret << "\\";
+                ret << str[i];
             }
             if (str[i] == '\"') {
                 ret << "\\\\";
+                ret << str[i];
             }
-            ret << str[i];
+            if (str[i] == '\r') {
+                ret << "\\r";
+            }
         }
         return ret.str();
     }
