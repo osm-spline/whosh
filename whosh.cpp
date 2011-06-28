@@ -140,7 +140,7 @@ public:
     void callback_init() {
         PGresult *res;
         sendBegin(node_conn);
-        //sendBegin(way_conn);
+        sendBegin(way_conn);
         //sendBegin(rel_conn);
 
         res = PQexec(node_conn, "COPY nodes (id, version, user_id, tstamp, changeset_id, tags, geom) FROM STDIN DELIMITER ';'");
@@ -152,7 +152,7 @@ public:
             exit(1);
         }
 
-/*
+
        res = PQexec(way_conn, "COPY ways (id, version, user_id, tstamp, changeset_id, tags, nodes) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
             std::cerr << "COMMAND COPY failded: ";
@@ -161,7 +161,6 @@ public:
             PQfinish(way_conn);
             exit(1);
         }
-*/
     }
 
     void callback_node(Osmium::OSM::Node *node) {
@@ -199,16 +198,21 @@ public:
         way_str << genNodesArray(way) << d;
         way_str << d;
         way_str << std::endl;
-        //std::cout << way_str.str();
 
         //only for testing remove soon
         finishHim(node_conn);
         exit(0);
 
-        way_count++;
-        if (way_count % 10000 == 0) {
-            std::cerr << '\r';
-            std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+        int success = PQputCopyData(way_conn, way_str.str().c_str(), way_str.str().length());
+        if (success == 1) {
+            way_count++;
+            if (way_count % 10000 == 0) {
+                std::cerr << '\r';
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+            }
+        }
+        else {
+            std::cerr << "Meh on Way: " << way_str.str() << std::endl;
         }
     }
 
@@ -222,7 +226,7 @@ public:
 
     void callback_final() {
         finishHim(node_conn);
-        //finishHim(way_conn);
+        finishHim(way_conn);
         //finishHim(rel_conn);
         std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
     }
