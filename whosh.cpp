@@ -22,14 +22,14 @@ public:
         node_count = 0;
         way_count = 0;
         rel_count = 0;
-        
-/*        node_conn = PQconnectdb(dbConnectionString.c_str());
+
+        node_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(node_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Nodes failed: ";
             std::cerr << PQerrorMessage(node_conn) << std::endl;
             exit(1);
         }
-        
+        /*
         way_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(way_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Ways failed: ";
@@ -43,7 +43,7 @@ public:
             std::cerr << PQerrorMessage(rel_conn) << std::endl;
             exit(1);
         }
-*/
+        */
     }
 
     ~pgCopyHandler() {
@@ -95,9 +95,69 @@ public:
         return out.str();
     }
 
+    void sendBegin(PGconn *conn) {
+        PGresult *res;
+        res = PQexec(conn, "BEGIN;");
+        if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+            std::cerr << "COMMAND BEGIN failded: ";
+            std::cerr << PQerrorMessage(conn) << std::endl;
+            PQclear(res);
+            PQfinish(conn);
+            exit(1);
+        }
+    }
+    
+    void finishHim(PGconn *conn) {
+        PGresult *res;
+        if(PQputCopyEnd(conn, NULL)) {
+            std::cerr << std::endl << "Copy End..." << std::endl;
+        }
+        while((res = PQgetResult(conn)) != NULL) {
+            std::cerr << "\r" << "Waiting for Copy to finish";
+        }
+        std::cerr << "\r" << "Copy finished             " << std:: endl;
+        PQendcopy(conn);
+        while((res = PQgetResult(conn)) != NULL) {
+            std::cerr << "\r" << "Waiting for Server to Sync";
+        }
+        std::cerr << "Sync Done" << std:: endl;
+
+        res = PQexec(conn, "END;");
+        if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+            std::cerr << "COMMAND END failded: ";
+            std::cerr << PQerrorMessage(conn) << std::endl;
+            PQclear(res);
+            PQfinish(conn);
+            exit(1);
+        }
+        PQfinish(conn);
+    }
+
     void callback_init() {
-        std::cerr << "Sending BEGIN" << std::endl;
-        //std::cout << "BEGIN;" << std::endl;
+        PGresult *res;
+        sendBegin(node_conn);
+        //sendBegin(way_conn);
+        //sendBegin(rel_conn);
+
+        res = PQexec(node_conn, "COPY nodes (id, version, user_id, tstamp, changeset_id, tags, geom) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY failded: ";
+            std::cerr << PQerrorMessage(node_conn) << std::endl;
+            PQclear(res);
+            PQfinish(node_conn);
+            exit(1);
+        }
+
+/*
+       res = PQexec(way_conn, "COPY ways (id, version, user_id, tstamp, changeset_id, tags, nodes) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY failded: ";
+            std::cerr << PQerrorMessage(way_conn) << std::endl;
+            PQclear(res);
+            PQfinish(way_conn);
+            exit(1);
+        }
+*/
     }
 
     void callback_node(Osmium::OSM::Node *node) {
@@ -110,12 +170,17 @@ public:
         node_str << tagsToHstore(node) << d;
         node_str << "SRID=4326\\;POINT(" << node->get_lat() << " " << node->get_lon() << ")";
         node_str << std::endl;
-        std::cout << node_str.str();
-
-        node_count++;
-        if (node_count % 10000 == 0) {
-            std::cerr << '\r';
-            std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+        int success = PQputCopyData(node_conn, node_str.str().c_str(), node_str.str().length());
+        //std::cout << node_str.str();
+        if (success == 1) {
+            node_count++;
+            if (node_count % 10000 == 0) {
+                std::cerr << '\r';
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
+            }
+        }
+        else {
+            std::cerr << "Meh" << std::endl;
         }
     }
 
@@ -148,7 +213,9 @@ public:
     }
 
     void callback_final() {
-        std::cerr << "END;" << std::endl;
+        finishHim(node_conn);
+        //finishHim(way_conn);
+        //finishHim(rel_conn);
     }
 
 };
