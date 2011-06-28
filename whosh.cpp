@@ -156,7 +156,7 @@ public:
         }
 
 
-       res = PQexec(way_conn, "COPY ways (id, version, user_id, tstamp, changeset_id, tags, nodes) FROM STDIN DELIMITER ';'");
+       res = PQexec(way_conn, "COPY ways (id, version, user_id, tstamp, changeset_id, tags, nodes, linestring) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
             std::cerr << "COMMAND COPY failded: ";
             std::cerr << PQerrorMessage(way_conn) << std::endl;
