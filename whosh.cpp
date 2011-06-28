@@ -216,6 +216,7 @@ public:
         finishHim(node_conn);
         //finishHim(way_conn);
         //finishHim(rel_conn);
+        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count;
     }
 
 };
