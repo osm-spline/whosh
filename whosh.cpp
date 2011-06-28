@@ -29,14 +29,14 @@ public:
             std::cerr << PQerrorMessage(node_conn) << std::endl;
             exit(1);
         }
-        /*
+
         way_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(way_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Ways failed: ";
             std::cerr << PQerrorMessage(way_conn) << std::endl;
             exit(1);
         }
-        
+        /*
         rel_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(rel_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Relations failed: ";
@@ -164,6 +164,7 @@ public:
     }
 
     void callback_node(Osmium::OSM::Node *node) {
+        /*
         std::ostringstream node_str;
         node_str << node->get_id() << d;
         node_str << node->get_version() << d;
