@@ -197,6 +197,10 @@ public:
         way_str << std::endl;
         //std::cout << way_str.str();
 
+        //only for testing remove soon
+        finishHim(node_conn);
+        exit(0);
+
         way_count++;
         if (way_count % 10000 == 0) {
             std::cerr << '\r';
