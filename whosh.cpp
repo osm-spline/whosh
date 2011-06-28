@@ -199,7 +199,7 @@ public:
         way_str << way->get_changeset() << d;
         way_str << tagsToHstore(way) << d;
         way_str << genNodesArray(way) << d;
-        way_str << "";
+        way_str << "\\N";
         way_str << std::endl;
 
         int success = PQputCopyData(way_conn, way_str.str().c_str(), way_str.str().length());
