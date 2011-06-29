@@ -5,15 +5,19 @@
 #include <iostream>
 #include <iomanip>
 #include <string.h>
+#include <limits.h>
+#include <bitset>
 
 #define OSMIUM_MAIN
 #include <osmium.hpp>
 
 class pgCopyHandler : public Osmium::Handler::Base {
 
-PGconn *node_conn, *way_conn, *rel_conn, *relmem_conn, *waynode_conn;
+PGconn *node_conn, *way_conn, *rel_conn, *relmem_conn, *waynode_conn, *user_conn;
 static const char d = ';';
-long int node_count, way_count, rel_count, relmem_count, waynode_count;
+long int node_count, way_count, rel_count, relmem_count, waynode_count, user_count;
+std::bitset<INT_MAX> user;
+
 
 public:
 
@@ -52,14 +56,13 @@ public:
             exit(1);
         }
 
-/*
         user_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(user_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Users failed: ";
             std::cerr << PQerrorMessage(user_conn) << std::endl;
             exit(1);
         }
-*/
+
         waynode_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(waynode_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Relation Members failed: ";
@@ -128,6 +131,27 @@ public:
         return out.str();
     }
 
+    void addUser(Osmium::OSM::Object *obj) {
+        if (!user[obj->get_uid()]) {
+            std::ostringstream user_str;
+            user_str << obj->get_uid() << d;
+            user_str << obj->get_user();
+            user_str << std::endl;
+
+            int success = PQputCopyData(user_conn, user_str.str().c_str(), user_str.str().length());
+            if (success == 1) {
+                user_count++;
+                if (user_count % 1000 == 0) {
+                    std::cerr << '\r';
+                    std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+                }
+            }
+            else {
+                std::cerr << "Meh on User: " << user_str.str() << std::endl;
+            }
+        }
+    }
+
     void sendBegin(PGconn *conn) {
         PGresult *res;
         res = PQexec(conn, "BEGIN;");
@@ -172,6 +196,7 @@ public:
         sendBegin(way_conn);
         sendBegin(rel_conn);
         sendBegin(relmem_conn);
+        sendBegin(user_conn);
         sendBegin(waynode_conn);
 
         res = PQexec(node_conn, "COPY nodes (id, version, user_id, tstamp, changeset_id, tags, geom) FROM STDIN DELIMITER ';'");
@@ -183,6 +208,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
+            PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -197,6 +223,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
+            PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -210,6 +237,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
+            PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -223,10 +251,25 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
-            //PQfinish(user_conn);
+            PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
+
+        res = PQexec(user_conn, "COPY users (id, name) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY failded: ";
+            std::cerr << PQerrorMessage(user_conn) << std::endl;
+            PQclear(res);
+            PQfinish(node_conn);
+            PQfinish(way_conn);
+            PQfinish(rel_conn);
+            PQfinish(relmem_conn);
+            PQfinish(user_conn);
+            PQfinish(waynode_conn);
+            exit(1);
+        }
+
        res = PQexec(waynode_conn, "COPY way_nodes (way_id, node_id, sequence_id) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
             std::cerr << "COMMAND COPY failded: ";
@@ -236,6 +279,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
+            PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -257,12 +301,14 @@ public:
             node_count++;
             if (node_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
             }
         }
         else {
             std::cerr << "Meh on Node: " << node_str.str() << std::endl;
         }
+
+        addUser(node);
     }
 
     void callback_way(Osmium::OSM::Way *way) {
@@ -282,7 +328,7 @@ public:
             way_count++;
             if (way_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
             }
         }
         else {
@@ -304,12 +350,14 @@ public:
             waynode_count+=nodecount;
             if (waynode_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
             }
         }
         else {
             std::cerr << "Meh on Waynode: " << way_str.str() << std::endl;
         }
+
+        addUser(way);
 
     }
 
@@ -328,7 +376,7 @@ public:
             rel_count++;
             if (rel_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
             }
         }
         else {
@@ -355,21 +403,24 @@ public:
             relmem_count+=membercount;
             if (relmem_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
             }
         }
         else {
             std::cerr << "Meh on Relmem: " << relmem_str.str() << std::endl;
         }
+
+        addUser(rel);
     }
 
     void callback_final() {
         std::cerr << '\r';
-        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
         finishHim(node_conn);
         finishHim(way_conn);
         finishHim(rel_conn);
         finishHim(relmem_conn);
+        finishHim(user_conn);
         finishHim(waynode_conn);
     }
 
