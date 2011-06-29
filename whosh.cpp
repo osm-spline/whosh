@@ -146,7 +146,7 @@ public:
                     user_count++;
                     if (user_count % 1000 == 0) {
                         std::cerr << '\r';
-                        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+                        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
                     }
                 }
                 else {
@@ -306,7 +306,7 @@ public:
             node_count++;
             if (node_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
             }
         }
         else {
@@ -314,6 +314,9 @@ public:
         }
 
         //addUser(node);
+        if (user_count < node->get_uid()) {
+            user_count = node->get_uid();
+        }
     }
 
     void callback_way(Osmium::OSM::Way *way) {
@@ -333,7 +336,7 @@ public:
             way_count++;
             if (way_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
             }
         }
         else {
@@ -355,7 +358,7 @@ public:
             waynode_count+=nodecount;
             if (waynode_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
             }
         }
         else {
@@ -363,6 +366,9 @@ public:
         }
 
         //addUser(way);
+        if (user_count < way->get_uid()) {
+            user_count = way->get_uid();
+        }
 
     }
 
@@ -381,7 +387,7 @@ public:
             rel_count++;
             if (rel_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
             }
         }
         else {
@@ -408,7 +414,7 @@ public:
             relmem_count+=membercount;
             if (relmem_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
             }
         }
         else {
@@ -416,11 +422,15 @@ public:
         }
 
         //addUser(rel);
+        if (user_count < rel->get_uid()) {
+            user_count = rel->get_uid();
+        }
     }
 
     void callback_final() {
         std::cerr << '\r';
-        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+        std::cerr << "Max UserID was: " << user_count << std::endl;
         finishHim(node_conn);
         finishHim(way_conn);
         finishHim(rel_conn);
