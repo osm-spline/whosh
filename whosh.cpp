@@ -292,7 +292,7 @@ public:
             relmem_str << rel->get_id() << d;
             relmem_str << member->get_ref() << d;
             relmem_str << member->get_type() << d;
-            relmem_str << member->get_role() << d;
+            relmem_str << escape(member->get_role()) << d;
             relmem_str << i;
             relmem_str << std::endl;
         }
