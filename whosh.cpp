@@ -11,12 +11,9 @@
 
 class pgCopyHandler : public Osmium::Handler::Base {
 
-PGconn *node_conn, *way_conn, *rel_conn, *relmem_conn;
+PGconn *node_conn, *way_conn, *rel_conn, *relmem_conn, *waynode_conn;
 static const char d = ';';
-long int node_count;
-long int way_count;
-long int rel_count;
-long int relmem_count;
+long int node_count, way_count, rel_count, relmem_count, waynode_count;
 
 public:
 
@@ -25,6 +22,7 @@ public:
         way_count = 0;
         rel_count = 0;
         relmem_count = 0;
+        waynode_count = 0;
 
         node_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(node_conn) != CONNECTION_OK) {
@@ -54,6 +52,20 @@ public:
             exit(1);
         }
 
+/*
+        user_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(user_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Users failed: ";
+            std::cerr << PQerrorMessage(user_conn) << std::endl;
+            exit(1);
+        }
+*/
+        waynode_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(waynode_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Relation Members failed: ";
+            std::cerr << PQerrorMessage(waynode_conn) << std::endl;
+            exit(1);
+        }
 
     }
 
@@ -160,6 +172,7 @@ public:
         sendBegin(way_conn);
         sendBegin(rel_conn);
         sendBegin(relmem_conn);
+        sendBegin(waynode_conn);
 
         res = PQexec(node_conn, "COPY nodes (id, version, user_id, tstamp, changeset_id, tags, geom) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
@@ -170,6 +183,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
+            PQfinish(waynode_conn);
             exit(1);
         }
 
@@ -183,6 +197,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
+            PQfinish(waynode_conn);
             exit(1);
         }
 
@@ -195,6 +210,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
+            PQfinish(waynode_conn);
             exit(1);
         }
 
@@ -207,6 +223,20 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
+            //PQfinish(user_conn);
+            PQfinish(waynode_conn);
+            exit(1);
+        }
+       res = PQexec(waynode_conn, "COPY way_nodes (way_id, node_id, sequence_id) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY failded: ";
+            std::cerr << PQerrorMessage(waynode_conn) << std::endl;
+            PQclear(res);
+            PQfinish(node_conn);
+            PQfinish(way_conn);
+            PQfinish(rel_conn);
+            PQfinish(relmem_conn);
+            PQfinish(waynode_conn);
             exit(1);
         }
     }
@@ -252,12 +282,35 @@ public:
             way_count++;
             if (way_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
             }
         }
         else {
             std::cerr << "Meh on Way: " << way_str.str() << std::endl;
         }
+
+        osm_sequence_id_t nodecount = way->node_count();
+        osm_sequence_id_t i;
+        std::ostringstream waynode_str;
+        if (nodecount > 0) {
+            for(i=0;i<nodecount;++i) {
+                waynode_str << way->get_id() << d;
+                waynode_str << way->get_node_id(i) << d;
+                waynode_str << i << std::endl;
+            }
+        }
+        success = PQputCopyData(waynode_conn, waynode_str.str().c_str(), waynode_str.str().length());
+        if (success == 1) {
+            waynode_count++;
+            if (waynode_count % 10000 == 0) {
+                std::cerr << '\r';
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+            }
+        }
+        else {
+            std::cerr << "Meh on Waynode: " << way_str.str() << std::endl;
+        }
+
     }
 
     void callback_relation(Osmium::OSM::Relation *rel) {
@@ -275,7 +328,7 @@ public:
             rel_count++;
             if (rel_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
             }
         }
         else {
@@ -302,7 +355,7 @@ public:
             relmem_count+=membercount;
             if (relmem_count % 10000 == 0) {
                 std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
+                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
             }
         }
         else {
@@ -312,11 +365,12 @@ public:
 
     void callback_final() {
         std::cerr << '\r';
-        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count;
+        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
         finishHim(node_conn);
         finishHim(way_conn);
         finishHim(rel_conn);
         finishHim(relmem_conn);
+        finishHim(waynode_conn);
     }
 
 };
