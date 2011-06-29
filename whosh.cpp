@@ -5,8 +5,6 @@
 #include <iostream>
 #include <iomanip>
 #include <string.h>
-#include <limits.h>
-#include <bitset>
 
 #define OSMIUM_MAIN
 #include <osmium.hpp>
@@ -16,7 +14,7 @@ class pgCopyHandler : public Osmium::Handler::Base {
 PGconn *node_conn, *way_conn, *rel_conn, *relmem_conn, *waynode_conn, *user_conn;
 static const char d = ';';
 long int node_count, way_count, rel_count, relmem_count, waynode_count, user_count;
-std::bitset<INT_MAX> user;
+std::vector<bool> user;
 
 
 public:
@@ -27,6 +25,7 @@ public:
         rel_count = 0;
         relmem_count = 0;
         waynode_count = 0;
+        user_count = 0;
 
         node_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(node_conn) != CONNECTION_OK) {
@@ -132,22 +131,28 @@ public:
     }
 
     void addUser(Osmium::OSM::Object *obj) {
-        if (!user[obj->get_uid()]) {
-            std::ostringstream user_str;
-            user_str << obj->get_uid() << d;
-            user_str << obj->get_user();
-            user_str << std::endl;
-
-            int success = PQputCopyData(user_conn, user_str.str().c_str(), user_str.str().length());
-            if (success == 1) {
-                user_count++;
-                if (user_count % 1000 == 0) {
-                    std::cerr << '\r';
-                    std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
-                }
+        if (obj->get_uid() >= 0) {
+            if (user.size() < obj->get_uid()) {
+                user.resize(obj->get_uid()+1);
             }
-            else {
-                std::cerr << "Meh on User: " << user_str.str() << std::endl;
+            if (!user[obj->get_uid()]) {
+                std::ostringstream user_str;
+                user_str << obj->get_uid() << d;
+                user_str << obj->get_user();
+                user_str << std::endl;
+
+                int success = PQputCopyData(user_conn, user_str.str().c_str(), user_str.str().length());
+                if (success == 1) {
+                    user_count++;
+                    if (user_count % 1000 == 0) {
+                        std::cerr << '\r';
+                        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count << " Users: " << user_count;
+                    }
+                }
+                else {
+                    std::cerr << "Meh on User: " << user_str.str() << std::endl;
+                }
+                user[obj->get_uid()] = true;
             }
         }
     }
