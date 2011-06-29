@@ -301,7 +301,7 @@ public:
         }
         success = PQputCopyData(waynode_conn, waynode_str.str().c_str(), waynode_str.str().length());
         if (success == 1) {
-            waynode_count++;
+            waynode_count+=nodecount;
             if (waynode_count % 10000 == 0) {
                 std::cerr << '\r';
                 std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
