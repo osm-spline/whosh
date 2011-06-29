@@ -148,7 +148,7 @@ public:
             std::cerr << PQerrorMessage(conn) << std::endl;
             PQclear(res);
             PQfinish(conn);
-            exit(1);
+            return;
         }
         PQfinish(conn);
     }
