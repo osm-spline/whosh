@@ -260,7 +260,7 @@ public:
             PQfinish(waynode_conn);
             exit(1);
         }
-
+/*
         res = PQexec(user_conn, "COPY users (id, name) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
             std::cerr << "COMMAND COPY failded: ";
@@ -274,7 +274,7 @@ public:
             PQfinish(waynode_conn);
             exit(1);
         }
-
+*/
        res = PQexec(waynode_conn, "COPY way_nodes (way_id, node_id, sequence_id) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
             std::cerr << "COMMAND COPY failded: ";
