@@ -54,14 +54,14 @@ public:
             std::cerr << PQerrorMessage(relmem_conn) << std::endl;
             exit(1);
         }
-
+/*
         user_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(user_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Users failed: ";
             std::cerr << PQerrorMessage(user_conn) << std::endl;
             exit(1);
         }
-
+*/
         waynode_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(waynode_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Relation Members failed: ";
@@ -129,7 +129,7 @@ public:
         }
         return out.str();
     }
-
+/*
     void addUser(Osmium::OSM::Object *obj) {
         if (obj->get_uid() >= 0) {
             if (user.size() < obj->get_uid()) {
@@ -138,7 +138,7 @@ public:
             if (!user[obj->get_uid()]) {
                 std::ostringstream user_str;
                 user_str << obj->get_uid() << d;
-                user_str << obj->get_user();
+                user_str << escape(obj->get_user());
                 user_str << std::endl;
 
                 int success = PQputCopyData(user_conn, user_str.str().c_str(), user_str.str().length());
@@ -156,7 +156,7 @@ public:
             }
         }
     }
-
+*/
     void sendBegin(PGconn *conn) {
         PGresult *res;
         res = PQexec(conn, "BEGIN;");
@@ -201,7 +201,7 @@ public:
         sendBegin(way_conn);
         sendBegin(rel_conn);
         sendBegin(relmem_conn);
-        sendBegin(user_conn);
+        //sendBegin(user_conn);
         sendBegin(waynode_conn);
 
         res = PQexec(node_conn, "COPY nodes (id, version, user_id, tstamp, changeset_id, tags, geom) FROM STDIN DELIMITER ';'");
@@ -213,7 +213,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
-            PQfinish(user_conn);
+            //PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -228,7 +228,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
-            PQfinish(user_conn);
+            //PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -242,7 +242,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
-            PQfinish(user_conn);
+            //PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -256,7 +256,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
-            PQfinish(user_conn);
+            //PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -270,7 +270,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
-            PQfinish(user_conn);
+            //PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -284,7 +284,7 @@ public:
             PQfinish(way_conn);
             PQfinish(rel_conn);
             PQfinish(relmem_conn);
-            PQfinish(user_conn);
+            //PQfinish(user_conn);
             PQfinish(waynode_conn);
             exit(1);
         }
@@ -313,7 +313,7 @@ public:
             std::cerr << "Meh on Node: " << node_str.str() << std::endl;
         }
 
-        addUser(node);
+        //addUser(node);
     }
 
     void callback_way(Osmium::OSM::Way *way) {
@@ -362,7 +362,7 @@ public:
             std::cerr << "Meh on Waynode: " << way_str.str() << std::endl;
         }
 
-        addUser(way);
+        //addUser(way);
 
     }
 
@@ -415,7 +415,7 @@ public:
             std::cerr << "Meh on Relmem: " << relmem_str.str() << std::endl;
         }
 
-        addUser(rel);
+        //addUser(rel);
     }
 
     void callback_final() {
@@ -425,7 +425,7 @@ public:
         finishHim(way_conn);
         finishHim(rel_conn);
         finishHim(relmem_conn);
-        finishHim(user_conn);
+        //finishHim(user_conn);
         finishHim(waynode_conn);
     }
 
