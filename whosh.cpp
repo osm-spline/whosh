@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <string.h>
 
 #define OSMIUM_MAIN
 #include <osmium.hpp>
@@ -406,7 +407,10 @@ int main(int argc, char *argv[]) {
 
     // hide cmd line args
     for (int i=1;i<argc;++i) {
-        argv[i][0] = 0;
+        unsigned int len = strlen(argv[i]);
+        for(unsigned int j=0;j<len;++j) {
+            argv[i][j]=0;
+        }
     }
 
     Osmium::Framework osmium(debug);
