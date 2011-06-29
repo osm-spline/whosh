@@ -92,6 +92,9 @@ public:
             else if (str[i] == '\n') {
                 ret << "\\n";
             }
+            else if (str[i] == '\\') {
+                ret << "\\\\";
+            }
             else {
                 ret << str[i];
             }
