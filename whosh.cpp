@@ -74,6 +74,9 @@ public:
             else if (str[i] == '\r') {
                 ret << "\\r";
             }
+            else if (str[i] == '\n') {
+                ret << "\\n";
+            }
             else {
                 ret << str[i];
             }
