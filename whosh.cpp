@@ -80,11 +80,10 @@ public:
         for(i=0;i<str.length();++i) {
             if (str[i] == d) {
                 ret << "\\";
-                ret << str[i];
+                ret << d;
             }
             else if (str[i] == '\"') {
-                ret << "\\\\";
-                ret << str[i];
+                ret << "\\\\\"";
             }
             else if (str[i] == '\r') {
                 ret << "\\r";
@@ -93,7 +92,7 @@ public:
                 ret << "\\n";
             }
             else if (str[i] == '\\') {
-                ret << "\\\\";
+                ret << "\\\\\\\\";
             }
             else {
                 ret << str[i];
