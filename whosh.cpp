@@ -74,6 +74,11 @@ public:
     ~pgCopyHandler() {
     }
 
+    void printStats() {
+        std::cerr << '\r';
+        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+    }
+
     std::string escape(std::string str) {
         std::ostringstream ret;
         size_t i;
@@ -147,8 +152,7 @@ public:
                 if (success == 1) {
                     user_count++;
                     if (user_count % 1000 == 0) {
-                        std::cerr << '\r';
-                        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                        printStats();
                     }
                 }
                 else {
@@ -307,8 +311,7 @@ public:
         if (success == 1) {
             node_count++;
             if (node_count % 10000 == 0) {
-                std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                printStats();
             }
         }
         else {
@@ -337,8 +340,7 @@ public:
         if (success == 1) {
             way_count++;
             if (way_count % 10000 == 0) {
-                std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                printStats();
             }
         }
         else {
@@ -359,8 +361,7 @@ public:
         if (success == 1) {
             waynode_count+=nodecount;
             if (waynode_count % 10000 == 0) {
-                std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                printStats();
             }
         }
         else {
@@ -388,8 +389,7 @@ public:
         if (success == 1) {
             rel_count++;
             if (rel_count % 10000 == 0) {
-                std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                printStats();
             }
         }
         else {
@@ -415,8 +415,7 @@ public:
         if (success == 1) {
             relmem_count+=membercount;
             if (relmem_count % 10000 == 0) {
-                std::cerr << '\r';
-                std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
+                printStats();
             }
         }
         else {
@@ -430,9 +429,8 @@ public:
     }
 
     void callback_final() {
-        std::cerr << '\r';
-        std::cerr << "Nodes: " << node_count << " Ways: " << way_count << " Relations: " << rel_count << " Relation Members: " << relmem_count << " Way Nodes: " << waynode_count;
-        std::cerr << "Max UserID was: " << user_count << std::endl;
+        printStats()
+        std::cerr << std::endl << "Max UserID was: " << user_count << std::endl;
         finishHim(node_conn);
         finishHim(way_conn);
         finishHim(rel_conn);
