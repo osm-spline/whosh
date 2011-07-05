@@ -27,12 +27,6 @@ public:
         waynode_count = 0;
         user_count = 0;
 
-        way_conn = PQconnectdb(dbConnectionString.c_str());
-        if(PQstatus(way_conn) != CONNECTION_OK) {
-            std::cerr << "DB Connection for Ways failed: ";
-            std::cerr << PQerrorMessage(way_conn) << std::endl;
-            exit(1);
-        }
 
         rel_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(rel_conn) != CONNECTION_OK) {
@@ -55,12 +49,6 @@ public:
             exit(1);
         }
 */
-        waynode_conn = PQconnectdb(dbConnectionString.c_str());
-        if(PQstatus(waynode_conn) != CONNECTION_OK) {
-            std::cerr << "DB Connection for Relation Members failed: ";
-            std::cerr << PQerrorMessage(waynode_conn) << std::endl;
-            exit(1);
-        }
 
     }
 
@@ -196,25 +184,9 @@ public:
 
     void callback_init() {
         PGresult *res;
-        sendBegin(way_conn);
         sendBegin(rel_conn);
         sendBegin(relmem_conn);
         //sendBegin(user_conn);
-        sendBegin(waynode_conn);
-
-       res = PQexec(way_conn, "COPY ways (id, version, user_id, tstamp, changeset_id, tags, nodes, linestring) FROM STDIN DELIMITER ';'");
-        if (PQresultStatus(res) != PGRES_COPY_IN) {
-            std::cerr << "COMMAND COPY failded: ";
-            std::cerr << PQerrorMessage(way_conn) << std::endl;
-            PQclear(res);
-            PQfinish(node_conn);
-            PQfinish(way_conn);
-            PQfinish(rel_conn);
-            PQfinish(relmem_conn);
-            //PQfinish(user_conn);
-            PQfinish(waynode_conn);
-            exit(1);
-        }
 
        res = PQexec(rel_conn, "COPY relations (id, version, user_id, tstamp, changeset_id, tags) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
@@ -258,19 +230,6 @@ public:
             exit(1);
         }
 */
-       res = PQexec(waynode_conn, "COPY way_nodes (way_id, node_id, sequence_id) FROM STDIN DELIMITER ';'");
-        if (PQresultStatus(res) != PGRES_COPY_IN) {
-            std::cerr << "COMMAND COPY failded: ";
-            std::cerr << PQerrorMessage(waynode_conn) << std::endl;
-            PQclear(res);
-            PQfinish(node_conn);
-            PQfinish(way_conn);
-            PQfinish(rel_conn);
-            PQfinish(relmem_conn);
-            //PQfinish(user_conn);
-            PQfinish(waynode_conn);
-            exit(1);
-        }
     }
 
     void callback_before_nodes() {
@@ -326,6 +285,44 @@ public:
         finishHim(node_conn);
     }
 
+    void callback_before_ways() {
+        way_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(way_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Ways failed: ";
+            std::cerr << PQerrorMessage(way_conn) << std::endl;
+            exit(1);
+        }
+
+        PGresult *res;
+        sendBegin(way_conn);
+        res = PQexec(way_conn, "COPY ways (id, version, user_id, tstamp, changeset_id, tags, nodes, linestring) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY for ways failded: ";
+            std::cerr << PQerrorMessage(way_conn) << std::endl;
+            PQclear(res);
+            PQfinish(way_conn);
+            exit(1);
+        }
+
+        waynode_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(waynode_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for way_nodes failed: ";
+            std::cerr << PQerrorMessage(waynode_conn) << std::endl;
+            exit(1);
+        }
+
+        sendBegin(waynode_conn);
+        res = PQexec(waynode_conn, "COPY way_nodes (way_id, node_id, sequence_id) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY for way_nodes failded: ";
+            std::cerr << PQerrorMessage(waynode_conn) << std::endl;
+            PQclear(res);
+            PQfinish(way_conn);
+            PQfinish(waynode_conn);
+            exit(1);
+        }
+    }
+
     void callback_way(Osmium::OSM::Way *way) {
         std::ostringstream way_str;
         way_str << way->get_id() << d;
@@ -375,6 +372,11 @@ public:
             user_count = way->get_uid();
         }
 
+    }
+
+    void callback_after_ways() {
+        finishHim(way_conn);
+        finishHim(waynode_conn);
     }
 
     void callback_relation(Osmium::OSM::Relation *rel) {
@@ -433,11 +435,9 @@ public:
     void callback_final() {
         printStats()
         std::cerr << std::endl << "Max UserID was: " << user_count << std::endl;
-        finishHim(way_conn);
         finishHim(rel_conn);
         finishHim(relmem_conn);
         //finishHim(user_conn);
-        finishHim(waynode_conn);
     }
 
 };
