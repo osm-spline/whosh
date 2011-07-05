@@ -336,16 +336,14 @@ public:
     }
 
     void callback_before_relations() {
-        sendBegin(rel_conn);
-        sendBegin(relmem_conn);
-
         rel_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(rel_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Relations failed: ";
             std::cerr << PQerrorMessage(rel_conn) << std::endl;
             exit(1);
         }
-        
+        sendBegin(rel_conn);
+
         PGresult *res;
         res = PQexec(rel_conn, "COPY relations (id, version, user_id, tstamp, changeset_id, tags) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
@@ -357,13 +355,13 @@ public:
             exit(1);
         }
 
-
         relmem_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(relmem_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Relation Members failed: ";
             std::cerr << PQerrorMessage(relmem_conn) << std::endl;
             exit(1);
         }
+        sendBegin(relmem_conn);
 
         res = PQexec(relmem_conn, "COPY relation_members (relation_id, member_id, member_type, member_role, sequence_id) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
