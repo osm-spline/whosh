@@ -14,18 +14,21 @@ class pgCopyHandler : public Osmium::Handler::Base {
 PGconn *node_conn, *way_conn, *rel_conn, *relmem_conn, *waynode_conn, *user_conn;
 static const char d = ';';
 long int node_count, way_count, rel_count, relmem_count, waynode_count, user_count;
-std::vector<bool> user;
+std::string dbConnectionString;
+//std::vector<bool> user;
+
 
 
 public:
 
-    pgCopyHandler(std::string dbConnectionString) {
+    pgCopyHandler(std::string dbConnectionStr) {
         node_count = 0;
         way_count = 0;
         rel_count = 0;
         relmem_count = 0;
         waynode_count = 0;
         user_count = 0;
+        dbConnectionString = dbConnectionStr;
 /*
         user_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(user_conn) != CONNECTION_OK) {
@@ -234,7 +237,7 @@ public:
     }
 
     void callback_after_nodes() {
-        printStats()
+        printStats();
         finishHim(node_conn);
     }
 
@@ -432,7 +435,7 @@ public:
     }
 
     void callback_final() {
-        printStats()
+        printStats();
         std::cerr << std::endl << "Max UserID was: " << user_count << std::endl;
     }
 
