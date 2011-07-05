@@ -26,21 +26,6 @@ public:
         relmem_count = 0;
         waynode_count = 0;
         user_count = 0;
-
-
-        rel_conn = PQconnectdb(dbConnectionString.c_str());
-        if(PQstatus(rel_conn) != CONNECTION_OK) {
-            std::cerr << "DB Connection for Relations failed: ";
-            std::cerr << PQerrorMessage(rel_conn) << std::endl;
-            exit(1);
-        }
-
-        relmem_conn = PQconnectdb(dbConnectionString.c_str());
-        if(PQstatus(relmem_conn) != CONNECTION_OK) {
-            std::cerr << "DB Connection for Relation Members failed: ";
-            std::cerr << PQerrorMessage(relmem_conn) << std::endl;
-            exit(1);
-        }
 /*
         user_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(user_conn) != CONNECTION_OK) {
@@ -49,7 +34,6 @@ public:
             exit(1);
         }
 */
-
     }
 
     ~pgCopyHandler() {
@@ -183,38 +167,7 @@ public:
     }
 
     void callback_init() {
-        PGresult *res;
-        sendBegin(rel_conn);
-        sendBegin(relmem_conn);
-        //sendBegin(user_conn);
 
-       res = PQexec(rel_conn, "COPY relations (id, version, user_id, tstamp, changeset_id, tags) FROM STDIN DELIMITER ';'");
-        if (PQresultStatus(res) != PGRES_COPY_IN) {
-            std::cerr << "COMMAND COPY failded: ";
-            std::cerr << PQerrorMessage(rel_conn) << std::endl;
-            PQclear(res);
-            PQfinish(node_conn);
-            PQfinish(way_conn);
-            PQfinish(rel_conn);
-            PQfinish(relmem_conn);
-            //PQfinish(user_conn);
-            PQfinish(waynode_conn);
-            exit(1);
-        }
-
-       res = PQexec(relmem_conn, "COPY relation_members (relation_id, member_id, member_type, member_role, sequence_id) FROM STDIN DELIMITER ';'");
-        if (PQresultStatus(res) != PGRES_COPY_IN) {
-            std::cerr << "COMMAND COPY failded: ";
-            std::cerr << PQerrorMessage(relmem_conn) << std::endl;
-            PQclear(res);
-            PQfinish(node_conn);
-            PQfinish(way_conn);
-            PQfinish(rel_conn);
-            PQfinish(relmem_conn);
-            //PQfinish(user_conn);
-            PQfinish(waynode_conn);
-            exit(1);
-        }
 /*
         res = PQexec(user_conn, "COPY users (id, name) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
@@ -379,6 +332,47 @@ public:
         finishHim(waynode_conn);
     }
 
+    void callback_before_relations() {
+        sendBegin(rel_conn);
+        sendBegin(relmem_conn);
+
+        rel_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(rel_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Relations failed: ";
+            std::cerr << PQerrorMessage(rel_conn) << std::endl;
+            exit(1);
+        }
+        
+        PGresult *res;
+        res = PQexec(rel_conn, "COPY relations (id, version, user_id, tstamp, changeset_id, tags) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY for relations failed: ";
+            std::cerr << PQerrorMessage(rel_conn) << std::endl;
+            PQclear(res);
+            PQfinish(rel_conn);
+            PQfinish(relmem_conn);
+            exit(1);
+        }
+
+
+        relmem_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(relmem_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Relation Members failed: ";
+            std::cerr << PQerrorMessage(relmem_conn) << std::endl;
+            exit(1);
+        }
+
+        res = PQexec(relmem_conn, "COPY relation_members (relation_id, member_id, member_type, member_role, sequence_id) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY for relation members failed: ";
+            std::cerr << PQerrorMessage(relmem_conn) << std::endl;
+            PQclear(res);
+            PQfinish(rel_conn);
+            PQfinish(relmem_conn);
+            exit(1);
+        }
+    }
+
     void callback_relation(Osmium::OSM::Relation *rel) {
         std::ostringstream rel_str;
         rel_str << rel->get_id() << d;
@@ -432,12 +426,14 @@ public:
         }
     }
 
+    void callback_after_relations() {
+        finishHim(rel_conn);
+        finishHim(relmem_conn);
+    }
+
     void callback_final() {
         printStats()
         std::cerr << std::endl << "Max UserID was: " << user_count << std::endl;
-        finishHim(rel_conn);
-        finishHim(relmem_conn);
-        //finishHim(user_conn);
     }
 
 };
