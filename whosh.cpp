@@ -27,13 +27,6 @@ public:
         waynode_count = 0;
         user_count = 0;
 
-        node_conn = PQconnectdb(dbConnectionString.c_str());
-        if(PQstatus(node_conn) != CONNECTION_OK) {
-            std::cerr << "DB Connection for Nodes failed: ";
-            std::cerr << PQerrorMessage(node_conn) << std::endl;
-            exit(1);
-        }
-
         way_conn = PQconnectdb(dbConnectionString.c_str());
         if(PQstatus(way_conn) != CONNECTION_OK) {
             std::cerr << "DB Connection for Ways failed: ";
@@ -203,27 +196,11 @@ public:
 
     void callback_init() {
         PGresult *res;
-        sendBegin(node_conn);
         sendBegin(way_conn);
         sendBegin(rel_conn);
         sendBegin(relmem_conn);
         //sendBegin(user_conn);
         sendBegin(waynode_conn);
-
-        res = PQexec(node_conn, "COPY nodes (id, version, user_id, tstamp, changeset_id, tags, geom) FROM STDIN DELIMITER ';'");
-        if (PQresultStatus(res) != PGRES_COPY_IN) {
-            std::cerr << "COMMAND COPY failded: ";
-            std::cerr << PQerrorMessage(node_conn) << std::endl;
-            PQclear(res);
-            PQfinish(node_conn);
-            PQfinish(way_conn);
-            PQfinish(rel_conn);
-            PQfinish(relmem_conn);
-            //PQfinish(user_conn);
-            PQfinish(waynode_conn);
-            exit(1);
-        }
-
 
        res = PQexec(way_conn, "COPY ways (id, version, user_id, tstamp, changeset_id, tags, nodes, linestring) FROM STDIN DELIMITER ';'");
         if (PQresultStatus(res) != PGRES_COPY_IN) {
@@ -296,6 +273,26 @@ public:
         }
     }
 
+    void callback_before_nodes() {
+        node_conn = PQconnectdb(dbConnectionString.c_str());
+        if(PQstatus(node_conn) != CONNECTION_OK) {
+            std::cerr << "DB Connection for Nodes failed: ";
+            std::cerr << PQerrorMessage(node_conn) << std::endl;
+            exit(1);
+        }
+
+        PGresult *res;
+        sendBegin(node_conn);
+        res = PQexec(node_conn, "COPY nodes (id, version, user_id, tstamp, changeset_id, tags, geom) FROM STDIN DELIMITER ';'");
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
+            std::cerr << "COMMAND COPY for nodes failed: ";
+            std::cerr << PQerrorMessage(node_conn) << std::endl;
+            PQclear(res);
+            PQfinish(node_conn);
+            exit(1);
+        }
+    }
+
     void callback_node(Osmium::OSM::Node *node) {
         std::ostringstream node_str;
         node_str << node->get_id() << d;
@@ -322,6 +319,11 @@ public:
         if (user_count < node->get_uid()) {
             user_count = node->get_uid();
         }
+    }
+
+    void callback_after_nodes() {
+        printStats()
+        finishHim(node_conn);
     }
 
     void callback_way(Osmium::OSM::Way *way) {
@@ -431,7 +433,6 @@ public:
     void callback_final() {
         printStats()
         std::cerr << std::endl << "Max UserID was: " << user_count << std::endl;
-        finishHim(node_conn);
         finishHim(way_conn);
         finishHim(rel_conn);
         finishHim(relmem_conn);
