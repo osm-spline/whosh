@@ -146,17 +146,17 @@ public:
     void finishHim(PGconn *conn) {
         PGresult *res;
         if(PQputCopyEnd(conn, NULL)) {
-            std::cerr << std::endl << "Copy End..." << std::endl;
+            //std::cerr << std::endl << "Copy End..." << std::endl;
         }
         while((res = PQgetResult(conn)) != NULL) {
-            std::cerr << "\r" << "Waiting for Copy to finish";
+            //std::cerr << "\r" << "Waiting for Copy to finish";
         }
-        std::cerr << "\r" << "Copy finished             " << std:: endl;
+        //std::cerr << "\r" << "Copy finished             " << std:: endl;
         PQendcopy(conn);
         while((res = PQgetResult(conn)) != NULL) {
-            std::cerr << "\r" << "Waiting for Server to Sync";
+            //std::cerr << "\r" << "Waiting for Server to Sync";
         }
-        std::cerr << "Sync Done" << std:: endl;
+        //std::cerr << "Sync Done" << std:: endl;
 
         res = PQexec(conn, "END;");
         if (PQresultStatus(res) != PGRES_COMMAND_OK) {
